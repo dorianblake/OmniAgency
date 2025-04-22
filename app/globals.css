@@ -1,0 +1,37 @@
+/* /app/globals.css */
+/* Themed global styles (as generated in omniagency_theme_setup) */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Apply base dark theme styles */
+  body {
+    @apply bg-dark-bg text-dark-text-primary dark; /* Ensure dark class and base styles */
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased; /* Smoother fonts */
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Style scrollbars (optional) */
+  ::-webkit-scrollbar {
+    width: 8px; height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #1a1a1a; /* dark-card */
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #4f46e5; /* primary */
+    border-radius: 10px;
+    border: 2px solid #1a1a1a; /* dark-card */
+  }
+   ::-webkit-scrollbar-thumb:hover {
+    background-color: #6366f1; /* primary-hover */
+  }
+
+  /* Base styles for inputs/textareas */
+  input, textarea, select {
+     @apply dark:bg-dark-card dark:text-dark-text-primary dark:border-dark-border focus:dark:border-primary focus:dark:ring-primary/50;
+  }
+} 
