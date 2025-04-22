@@ -8,7 +8,7 @@
 @layer base {
   /* Apply base dark theme styles */
   body {
-    @apply bg-dark-bg text-dark-text-primary dark; /* Ensure dark class and base styles */
+    @apply bg-dark-bg text-dark-text-primary; /* Ensure base styles */
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased; /* Smoother fonts */
     -moz-osx-font-smoothing: grayscale;
