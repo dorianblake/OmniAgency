@@ -38,11 +38,11 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {metrics.map((metric) => (
             <MetricCard // Uses themed component
-              key={metric.title}
-              title={metric.title}
+              key={metric.title} // Key for React list rendering
+              label={metric.title} // Pass title as label prop
               value={metric.value}
-              icon={metric.icon}
-              change={metric.change}
+              // icon={metric.icon} // Pass icon if MetricCard expects it
+              // change={metric.change} // Pass change if MetricCard expects it
             />
           ))}
         </div>

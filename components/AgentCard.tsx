@@ -6,9 +6,11 @@ import { Bot, Power, MessageSquare } from 'lucide-react';
 interface AgentCardProps {
   name: string;
   status: 'online' | 'offline';
+  avatar?: React.ReactNode;
+  description?: string;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ name, status }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ name, status, avatar, description }) => {
   const isOnline = status === 'online';
 
   return (
@@ -17,7 +19,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, status }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 flex items-center justify-center border border-white/20 shadow-inner">
-              <Bot className="w-5 h-5 text-primary" />
+              {avatar ? React.cloneElement(avatar as React.ReactElement, { className: "w-5 h-5 text-primary" }) : <Bot className="w-5 h-5 text-primary" />}
             </div>
             <h4 className="text-lg font-semibold text-dark-text-primary">{name}</h4>
           </div>
@@ -32,9 +34,13 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, status }) => {
             <span>{isOnline ? 'Online' : 'Offline'}</span>
           </span>
         </div>
-        {/* Optional: Add description or other info here */}
+        {description && (
+          <p className="text-sm text-dark-text-secondary mb-4">
+            {description}
+          </p>
+        )}
       </div>
-      <div className="flex items-center justify-end mt-4 pt-4 border-t border-dark-border/50">
+      <div className="flex items-center justify-end mt-auto pt-4 border-t border-dark-border/50">
          <button className="flex items-center justify-center px-4 py-2 text-sm font-medium text-dark-text-secondary bg-white/5 hover:bg-white/10 border border-dark-border rounded-lg transition-all duration-200">
            <MessageSquare className="w-4 h-4 mr-2" />
            Message
