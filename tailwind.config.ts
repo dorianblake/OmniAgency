@@ -4,64 +4,98 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: ["class"],
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
-  darkMode: 'class', // Using class strategy
+  prefix: "",
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "sans-serif"],
+        heading: ["var(--font-inter-bold)", "sans-serif"],
+      },
       colors: {
-        'dark-bg': '#0a0a0a',
-        'dark-card': '#1a1a1a',
-        'dark-border': '#333333',
-        'dark-text-primary': '#e0e0e0',
-        'dark-text-secondary': '#a0a0a0',
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: '#4f46e5', // Indigo 600
-          hover: '#6366f1',   // Indigo 500
-          glow: 'rgba(79, 70, 229, 0.6)',
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+          gradientStart: "#7F5AF0",
+          gradientEnd: "#2CB67D",
         },
         secondary: {
-          DEFAULT: '#22d3ee', // Cyan 400
-          hover: '#67e8f9',   // Cyan 300
-          glow: 'rgba(34, 211, 238, 0.6)',
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
       },
       borderRadius: {
-        'xl': '1rem',
-        '2xl': '1.5rem',
-        '3xl': '2rem',
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
-      boxShadow: {
-        'glow-primary': '0 0 15px 2px rgba(79, 70, 229, 0.5)',
-        'glow-secondary': '0 0 15px 2px rgba(34, 211, 238, 0.5)',
-        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
       },
-      transitionProperty: {
-        'all': 'all', 'shadow': 'box-shadow', 'bg': 'background-color', 'transform': 'transform',
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
       },
-      transitionDuration: { '300': '300ms' },
-      transitionTimingFunction: { 'ease-in-out': 'ease-in-out' }
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(to right, var(--primary-gradient-start), var(--primary-gradient-end))',
+      },
     },
   },
   plugins: [
-    require('@tailwindcss/forms'),
+    require("tailwindcss-animate"),
     function ({ addUtilities }: { addUtilities: Function }) {
       addUtilities({
-        '.glassmorphism': {
-          'background': 'rgba(26, 26, 26, 0.6)', // dark-card with opacity
-          'backdrop-filter': 'blur(10px)',
-          'border': '1px solid rgba(51, 51, 51, 0.5)', // dark-border with opacity
-          '@apply dark:bg-dark-card/60 dark:border-dark-border/50': {},
+        '.text-gradient-primary': {
+          '@apply bg-gradient-primary bg-clip-text text-transparent': {},
         },
-        '.glassmorphism-light': {
-          'background': 'rgba(255, 255, 255, 0.1)',
-          'backdrop-filter': 'blur(10px)',
-          'border': '1px solid rgba(255, 255, 255, 0.2)',
-        }
+        '.bg-gradient-primary': {
+          '@apply bg-gradient-to-r from-primary-gradientStart to-primary-gradientEnd': {},
+        },
       })
     }
   ],
