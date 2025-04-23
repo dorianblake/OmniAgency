@@ -46,4 +46,7 @@ pnpm-debug.log*
 
 # Optional: Output files from specific tools
 # .vercel
-# .netlify 
+# .netlify
+
+# Database URL
+DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:<PORT>/<DATABASE>"

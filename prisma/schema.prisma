@@ -1,0 +1,241 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Enable pgvector extension if you plan to use vector embeddings
+  // extensions = [pgvector] // Uncomment if using pgvector
+}
+
+// --- ENUMS ---
+
+enum PlanId {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum AgentStatus {
+  OFFLINE
+  ONLINE
+  TRAINING
+  ERROR
+}
+
+enum TriggerType {
+  MANUAL
+  SCHEDULE
+  WEBHOOK
+  API
+}
+
+// --- MODELS ---
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique // Clerk User ID is the primary link
+  email     String   @unique
+  name      String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Subscription & Billing Info
+  planId               PlanId    @default(FREE) @map("plan_id")
+  stripeCustomerId     String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
+  stripePriceId        String?   @map("stripe_price_id") // The ID of the Stripe Price object
+  stripeCurrentPeriodEnd DateTime? @map("stripe_current_period_end")
+
+  // Settings (Example - Could be a separate model)
+  defaultAgentName String? @map("default_agent_name")
+  welcomeMessage   String? @map("welcome_message")
+
+  // Relations
+  agents              Agent[]
+  toolCredentials     ToolCredentials[]
+  videoJobs           VideoJob[]
+  gameConfigs         GameConfig[]
+  agentExecutionLogs  AgentExecutionLog[] // Link logs directly to user as well if needed
+
+  @@map("users")
+}
+
+model Agent {
+  id          String      @id @default(cuid())
+  userId      String      // Foreign key to User model (using clerkId)
+  name        String
+  description String?
+  prompt      String      @db.Text // Core personality/instructions
+  status      AgentStatus @default(OFFLINE)
+  config      Json?       // For model parameters, specific settings
+  lastRun     DateTime?   @map("last_run")
+  triggerType TriggerType @default(MANUAL) @map("trigger_type")
+  webhookUrl  String?     @map("webhook_url") // If triggered by webhook
+  schedule    String?     // Cron string if scheduled
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  user              User                 @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  trainingSources   TrainingDataSource[]
+  executionLogs     AgentExecutionLog[]
+  // vectorEmbeddings VectorEmbedding[] // Relation needed if embedding linked directly to Agent
+
+  @@index([userId])
+  @@map("agents")
+}
+
+model TrainingDataSource {
+  id          String   @id @default(cuid())
+  agentId     String
+  name        String   // e.g., "Website FAQ", "Product Docs PDF"
+  sourceType  String   // e.g., 'url', 'file', 'text'
+  contentUrl  String?  @map("content_url") // URL if source is URL
+  contentBlob Bytes?   @map("content_blob") // Blob if source is file upload
+  contentText String?  @db.Text @map("content_text") // Text if source is direct input
+  status      String   @default("pending") // e.g., 'pending', 'processing', 'completed', 'failed'
+  lastProcessed DateTime? @map("last_processed")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  chunks TrainingDataChunk[]
+
+  @@index([agentId])
+  @@map("training_data_sources")
+}
+
+model TrainingDataChunk {
+  id                String   @id @default(cuid())
+  dataSourceId      String
+  chunkText         String   @db.Text @map("chunk_text")
+  metadata          Json?    // e.g., source URL, page number, file name
+  processingOrder   Int?     @map("processing_order")
+  createdAt         DateTime @default(now())
+
+  // Relations
+  dataSource        TrainingDataSource @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+  vectorEmbedding   VectorEmbedding?   // One-to-one or one-to-many? Assume one embedding per chunk for now
+
+  @@index([dataSourceId])
+  @@map("training_data_chunks")
+}
+
+// If using pgvector:
+// model VectorEmbedding {
+//   id          String    @id @default(cuid())
+//   chunkId     String    @unique // Link back to the chunk
+//   agentId     String    // Denormalize agentId for faster filtering
+//   embedding   Vector(1536)? // Adjust dimension (e.g., 1536 for OpenAI Ada)
+//   createdAt   DateTime  @default(now())
+//
+//   // Relations
+//   chunk       TrainingDataChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+//   // Cannot directly relate to Agent via agentId if agentId is just indexed string,
+//   // but useful for filtering. If strict relation needed, add Agent relation field.
+//
+//   @@index([agentId]) // Index for filtering embeddings by agent
+//   @@map("vector_embeddings")
+// }
+
+// Placeholder if NOT using pgvector extension directly in this model
+// Store embeddings elsewhere or manage differently.
+model VectorEmbedding {
+  id          String   @id @default(cuid())
+  chunkId     String   @unique
+  agentId     String
+  // embeddingBytes Bytes? // Or store as bytes/string if not using native Vector
+  embeddingJson String? @db.Text // Store as JSON string array
+  createdAt   DateTime @default(now())
+
+  chunk       TrainingDataChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@map("vector_embeddings")
+}
+
+
+model AgentExecutionLog {
+  id        String   @id @default(cuid())
+  agentId   String
+  userId    String   // Denormalize for easier access/filtering by user
+  startTime DateTime @default(now()) @map("start_time")
+  endTime   DateTime? @map("end_time")
+  status    String   // e.g., 'started', 'completed', 'failed'
+  input     Json?    // Input parameters/prompt details
+  output    Json?    // Output/response from agent
+  error     String?  @db.Text
+  cost      Float?   // Estimated cost if trackable
+  metadata  Json?    // Any other relevant metadata
+
+  // Relations
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [clerkId], onDelete: Cascade) // Link to user
+
+  @@index([agentId])
+  @@index([userId])
+  @@map("agent_execution_logs")
+}
+
+model ToolCredentials {
+  id              String   @id @default(cuid())
+  userId          String
+  toolName        String   @map("tool_name") // e.g., 'google_search', 'weather_api'
+  credentials     Json     // Encrypted credentials or API key, etc.
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+
+  @@unique([userId, toolName]) // User should have only one credential set per tool
+  @@index([userId])
+  @@map("tool_credentials")
+}
+
+// --- Content Generation Models ---
+
+model VideoJob {
+  id             String   @id @default(cuid())
+  userId         String
+  title          String?
+  script         String   @db.Text
+  voice          String?  // Identifier for the selected TTS voice
+  backgroundMusic String?  // Identifier/URL for background music
+  status         String   @default("pending") // e.g., 'pending', 'processing', 'completed', 'failed'
+  videoUrl       String?  @map("video_url")
+  error          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("video_jobs")
+}
+
+model GameConfig {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  configData  Json     // JSON representing the game structure/logic/assets
+  lastPublished DateTime? @map("last_published")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("game_configs")
+} 
